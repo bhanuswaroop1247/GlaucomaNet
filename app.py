@@ -2,7 +2,6 @@ import os
 import cv2
 import numpy as np
 import torch
-from torchvision import transforms
 from PIL import Image
 import timm
 import streamlit as st
@@ -14,8 +13,8 @@ BASE   = os.path.dirname(os.path.abspath(__file__))
 CKPT   = os.path.join(BASE, "models", "best_model_weights.pth")
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-IMAGENET_MEAN = [0.485, 0.456, 0.406]
-IMAGENET_STD  = [0.229, 0.224, 0.225]
+IMAGENET_MEAN = np.array([0.485, 0.456, 0.406], dtype=np.float32)
+IMAGENET_STD  = np.array([0.229, 0.224, 0.225], dtype=np.float32)
 
 
 class CLAHE:
@@ -32,12 +31,13 @@ class CLAHE:
         return Image.fromarray(arr)
 
 
-preprocess = transforms.Compose([
-    transforms.Resize((384, 384)),
-    CLAHE(clip_limit=2.0),
-    transforms.ToTensor(),
-    transforms.Normalize(mean=IMAGENET_MEAN, std=IMAGENET_STD),
-])
+def preprocess(pil_image: Image.Image) -> torch.Tensor:
+    """Resize → CLAHE → normalise → CHW tensor. No torchvision needed."""
+    img = pil_image.resize((384, 384), Image.LANCZOS)
+    img = CLAHE()(img)
+    arr = np.array(img, dtype=np.float32) / 255.0
+    arr = (arr - IMAGENET_MEAN) / IMAGENET_STD
+    return torch.from_numpy(arr.transpose(2, 0, 1))
 
 
 @st.cache_resource
@@ -50,7 +50,7 @@ def load_model():
 
 
 def run_inference(model, pil_image):
-    tensor = preprocess(pil_image).unsqueeze(0).to(DEVICE)
+    tensor = preprocess(pil_image).unsqueeze(0).to(DEVICE).float()
     use_amp = DEVICE.type == "cuda"
     with torch.no_grad():
         if use_amp:
@@ -67,7 +67,7 @@ def run_gradcam(model, pil_image):
     img_384  = pil_image.resize((384, 384))
     img_384  = CLAHE()(img_384)
     img_arr  = np.array(img_384, dtype=np.float32) / 255.0
-    tensor   = preprocess(pil_image).unsqueeze(0).to(DEVICE)
+    tensor   = preprocess(pil_image).unsqueeze(0).to(DEVICE).float()
     target_layer = model.conv_head
     with GradCAM(model=model, target_layers=[target_layer]) as cam:
         grayscale_cam = cam(input_tensor=tensor, targets=None)[0]
