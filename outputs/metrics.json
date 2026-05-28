@@ -1,0 +1,20 @@
+{
+  "auc_roc": 0.9158,
+  "optimal_threshold": 0.3853,
+  "accuracy": 0.8575,
+  "sensitivity": 0.85,
+  "specificity": 0.8583,
+  "f1_glaucoma": 0.544,
+  "sensitivity_at_95spec": 0.55,
+  "threshold_at_95spec": 0.4785,
+  "confusion_matrix": [
+    [
+      309,
+      51
+    ],
+    [
+      6,
+      34
+    ]
+  ]
+}

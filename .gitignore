@@ -1,0 +1,25 @@
+# Training data (do not commit — too large)
+REFUGE/
+ORIGA/
+G1020/
+
+# Full training checkpoint with optimizer (202 MB)
+models/best_model.pth
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Env
+.env
+venv/
